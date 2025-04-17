@@ -6,5 +6,11 @@
     },
     "[javascriptreact]": {
         "editor.defaultFormatter": "vscode.typescript-language-features"
+    },
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
     }
 }
