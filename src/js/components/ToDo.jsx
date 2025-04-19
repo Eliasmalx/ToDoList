@@ -14,6 +14,10 @@ const ToDos = () => {
             body: JSON.stringify({}),
         })
             .then((response) => {
+                if (response.status === 400 || response.status === 409) {
+                    console.warn("Usuario ya existe.");
+                    return;
+                }
                 if (!response.ok) {
                     throw new Error('Error en la solicitud');
                 }
@@ -41,8 +45,7 @@ const ToDos = () => {
                 return response.json();
             })
             .then((data) => {
-                data.todos;
-             setTareas(data.todos)
+                setTareas(data.todos)
             })
             .catch((error) => {
                 console.error('Error:', error);
@@ -51,17 +54,20 @@ const ToDos = () => {
 
     const handleKeyDown = (e) => {
         if (e.key === "Enter") {
-            if (tareas.includes(input.trim())) {
-                alert("Ya esta en la lista.");
+            if (input.trim() === "" || tareas.some(t => t.label === input.trim())) { 
+                alert("Estas intentando agregar una tarea existente o campo vacio.");
                 return;
             }
+            
 
-            let VarTareas = { label: input.trim(), done: false };
+            
             setInput("");
 
             fetch('https://playground.4geeks.com/todo/todos/Elias', {
                 method: "POST",
-                body: JSON.stringify(VarTareas),
+                body: JSON.stringify({ 
+                    label: input.trim(), 
+                    done: false }),
                 headers: {
                     "Content-Type": "application/json"
                 }
@@ -72,7 +78,7 @@ const ToDos = () => {
                     return resp.json();
                 })
                 .then(data => {
-                     getToDo()
+                    getToDo()
                     console.log(data);
                 })
                 .catch(error => {
@@ -81,6 +87,9 @@ const ToDos = () => {
         }
     };
     const tareaDelete = (id) => {
+
+        setTareas(prev => prev.filter(t => t.id !== id)); //Borrar en el front de una vez
+
         fetch(`https://playground.4geeks.com/todo/todos/${id}`, {
             method: "DELETE",
             headers: {
@@ -101,9 +110,32 @@ const ToDos = () => {
             });
     }
 
-    // const handleDelete = (delTarea) => {
-    //     setTareas(tareas.filter((item) => item !== delTarea));
-    // }; sirve para borrar solo en el front
+    const clearAllTasks = () => {
+        fetch('https://playground.4geeks.com/todo/users/Elias', {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify([{
+                label: "Limpiar lista",
+                done: true
+            }])
+        })
+            .then(resp => {
+                console.log(resp.ok);
+                console.log(resp.status);
+                return resp.json();
+            })
+            .then(data => {
+                console.log("Todas las tareas han sido eliminadas:", data);
+                setTareas([]);
+            })
+            .catch(error => {
+                console.error("Error al borrar todas las tareas:", error);
+            });
+    };
+
+    
 
     return (
         <div className="container">
@@ -121,8 +153,8 @@ const ToDos = () => {
                 {tareas.length === 0 ? (
                     <h2 className="text-center">No hay tareas pendientes🎉</h2>
                 ) : (
-                    tareas.map((tarea, index) => (
-                        <div className="d-flex" key={index}>
+                    tareas.map((tarea) => (
+                        <div className="d-flex" key={tarea.id}>
                             <a href="#" className="list-group-item list-group-item-action list-group-item-light">
                                 {tarea.label}
                             </a>
@@ -133,11 +165,20 @@ const ToDos = () => {
                             >
                                 ❌
                             </button>
+
                         </div>
                     ))
                 )}
             </div>
-            {/* <button onClick={getToDo}>prueba</button> */}
+            {tareas.length > 0 && (
+                <button
+                    type="button"
+                    className="btn btn-outline-danger btn-sm m-1"
+                    onClick={clearAllTasks}
+                >
+                    Limpiar Lista
+                </button>
+            )}
         </div>
     );
 };
